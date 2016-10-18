@@ -22,6 +22,12 @@ int P = 0;	//+ max value in a cell
 vector<int> big_cube;	//+ Intentionally uninitialized to avoid double allocation
 vector<vector<int>> cubes;
 
+struct coord {
+  int x = -1;
+  int y = -1;
+  int z = -1;
+} ;
+
 int load_data(string filename = "sample.in") 
 {
     fstream fh(filename, ios_base::in);
@@ -46,7 +52,7 @@ int load_data(string filename = "sample.in")
       cube < cubes.end(); ++cube)
       {
         fh >> cs;
-        cube -> resize(cs);
+        cube -> resize(pow(cs, 3));
         if (bDebug)
           cout << endl << cs << "; ";
         for (vector<int>::iterator i = cube -> begin(); i < cube -> end(); ++i)
@@ -55,6 +61,17 @@ int load_data(string filename = "sample.in")
 
     return 0;
 }	//+ load_data
+
+void calculate_cubes() 
+{
+    vector<coord> res(N);
+
+    //+ Calculating
+    
+
+    for (vector<coord>::iterator i = res.begin(); i < res.end(); ++i)
+        printf("[%d %d %d]\n", i -> x, i -> y, i -> x);
+}	//+ calculate_cubes
 
 int main(int argc, char *argv[])
 {
@@ -67,10 +84,11 @@ int main(int argc, char *argv[])
     } catch (const exception& e) {
         cout << "Error reading source file!" << endl;
     }
-    
+
+    calculate_cubes();
 #ifdef DEBUG
   clock_t end = clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-  printf ("Elapsed time: %.6f seconds", elapsed_secs);
+  printf ("\n  Elapsed time: %.6f seconds", elapsed_secs);
 #endif
 }	//+ main()
