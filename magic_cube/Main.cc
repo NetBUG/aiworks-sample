@@ -8,6 +8,8 @@ using namespace std;
 
 #ifndef DEBUG
 bool bDebug = true;
+#include <ctime>
+#define DEBUG
 #else
 bool bDebug = true;
 #endif
@@ -56,10 +58,19 @@ int load_data(string filename = "sample.in")
 
 int main(int argc, char *argv[])
 {
+#ifdef DEBUG
+    clock_t begin = clock();
+#endif
     cout << "Hello, world!\n";
     try {
         load_data();
     } catch (const exception& e) {
         cout << "Error reading source file!" << endl;
     }
+    
+#ifdef DEBUG
+  clock_t end = clock();
+  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  printf ("Elapsed time: %.6f seconds", elapsed_secs);
+#endif
 }	//+ main()
