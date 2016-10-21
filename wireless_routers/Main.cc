@@ -1,17 +1,19 @@
+#include <algorithm>
 #include <cassert>
 #include <fstream>
-#include <math.h>
 #include <iostream>
+#include <math.h>
+#include <numeric>
 #include <vector>
 
 using namespace std;
 
-#ifndef DEBUG
+#ifdef DEBUG
 bool bDebug = true;
 #include <ctime>
 #define DEBUG
 #else
-bool bDebug = true;
+bool bDebug = false;
 #endif
 
 //+ Global variables is not the best way to handle data in real applications, 
@@ -20,28 +22,16 @@ int M = 0;	//+ router count
 int N = 0;	//+ room count
 
 struct connections {
-  int x = -1;    //+ first possible neighbor
-  int y = -1;
-  int z = -1;
-  int sat = -1;  //+ satisfaction
+  vector<int> neighbors;
 } ;
 
 vector<int> rooms;	//+ satisfaction for each room
 vector<connections> coverages;	//+ satisfaction for room + neighbors
 
-int get_neighbor_count(connections conn) {
-  if (conn.z > 0) return 3;
-  if (conn.y > 0) return 2;
-  if (conn.x > 0) return 1;
-  return 0;
-}
-
 void append_neighbor(connections& conn, int room) {
-  int nc = get_neighbor_count(conn);
-  assert(nc < 3);	//+ room connections are full
-  if (nc > 1) conn.z = room;
-  else if (nc > 0) conn.y = room;
-  else conn.x = room;
+  if (find(conn.neighbors.begin(), conn.neighbors.end(), room) == conn.neighbors.end())
+    conn.neighbors[find(conn.neighbors.begin(), conn.neighbors.end(), -1) 
+      - conn.neighbors.begin()] = room;
 }
 
 int load_data(string filename = "sample.in") 
@@ -55,8 +45,12 @@ int load_data(string filename = "sample.in")
 
     rooms.resize(N);
     coverages.resize(N);
+    int j = 0;
     for (vector<int>::iterator i = rooms.begin(); i < rooms.end(); ++i)
+    {
         fh >> *i;
+        coverages[j++].neighbors.resize(3, -1);
+    }
     if (bDebug)
       for (int i = 0; i < rooms.size(); i++)
         printf("%d ", rooms[i]);
@@ -66,36 +60,63 @@ int load_data(string filename = "sample.in")
       {
         fh >> src;
         fh >> dst;
-        if (bDebug) printf("Conn %d: %d -> %d\n", i, src, dst);
-        append_neighbor(coverages[src], dst);
-        append_neighbor(coverages[dst], src);
+        if (bDebug) printf("\nConn %d: %d -> %d", i, src - 1, dst - 1);
+        append_neighbor(coverages[src - 1], dst - 1);
+        append_neighbor(coverages[dst - 1], src - 1);
       }
     return 0;
 }	//+ load_data
 
-void calculate_satisfaction() 
+int calculate_satisfaction(vector<int> orig_perm)
 {
+    int ret = 0;
+    vector<int> permutation(orig_perm);
+    for (int i = 0; i < permutation.size(); i++)
+    {
+        vector<int> neighbors = coverages[i].neighbors;
+        if (orig_perm[i] == 1)
+          for (int j = 0; j < neighbors.size(); j++)
+            if (neighbors[j] > -1)
+              permutation[neighbors[j]] = 1;
+    }
+
+    for (int i = 0; i < permutation.size(); i++) {
+        ret += permutation[i] > 0 ? rooms[i] : 0;
+        if (bDebug) cout << permutation[i];
+    }
+    return ret;
+}	//+ calculate_satisfaction
+
+int get_max_satisfaction() 
+{
+    if (M == N)	//~ shorthand, although does not save much time for single permutation
+        return accumulate(rooms.begin(), rooms.end(), 0);
+
     int max_sat = -1;
-
     //+ Calculating
-    
-
-    printf("Satisfaction: %d\n", max_sat);
-}	//+ calculate_cubes
+    vector<int> allocations(N, 0);
+    for (int i = N - M; i < N; i++)
+      allocations[i] = 1;
+    do {
+        max_sat = max(max_sat, calculate_satisfaction(allocations));
+    } while(std::next_permutation(allocations.begin(), allocations.end()));
+    return max_sat;
+}	//+ calculate_max_satisfaction
 
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG
     clock_t begin = clock();
 #endif
-    cout << "Hello, world!\n";
     try {
         load_data();
     } catch (const exception& e) {
         cout << "Error reading source file!" << endl;
     }
 
-    calculate_satisfaction();
+    int max_sat = get_max_satisfaction();
+    if (bDebug) printf("\nSatisfaction: %d\n", max_sat);
+    else cout << max_sat;
 #ifdef DEBUG
   clock_t end = clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
