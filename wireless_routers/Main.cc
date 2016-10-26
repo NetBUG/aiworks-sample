@@ -6,6 +6,9 @@
 #include <numeric>
 #include <vector>
 
+//+ @author Oleg Urzhumtcev
+//+ @brief Solution for Wireless routers task for Works AP
+
 using namespace std;
 
 #ifdef DEBUG

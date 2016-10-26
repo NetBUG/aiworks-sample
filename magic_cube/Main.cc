@@ -7,6 +7,9 @@
 #include <iostream>
 #include <vector>
 
+//+ @author Oleg Urzhumtcev
+//+ @brief Solution for Magic Cube application for WorksAP competition
+
 using namespace std;
 
 #ifndef DEBUG
@@ -42,8 +45,6 @@ int load_data(string filename = "sample.in")
     assert(P > 2 && P < 6);	//~ Wrong max cell value
 
     big_cube.resize(pow(M, 3));
-    //for (vector<int>::iterator i = big_cube.begin(); i < big_cube.end(); ++i)
-    //    fh >> *i;
     for (int i = 0; i < big_cube.size(); i++)
         fh >> big_cube[i];
     if (bDebug)
@@ -62,15 +63,31 @@ int load_data(string filename = "sample.in")
     return 0;
 }	//+ load_data
 
-coord check_validity(vector<int> allocX, vector<int> allocY, vector<int> allocZ) {
+bool find_broken_seq(vector<int> seq) {
+  int cur_val = 0;
+  for (vector<int>::iterator it = seq.begin(); it < seq.end(); ++it)
+    if (*it > 0)
+    {
+      if (*it > cur_val)
+        cur_val = *it;
+      else
+        return true;
+    }
+  return false;
+}
+
+coord check_validity(vector<int> allocX, vector<int> allocY, vector<int> allocZ)
+{
   vector <int> new_cube(big_cube);
   coord position;
+  if (find_broken_seq(allocX) || find_broken_seq(allocX) || find_broken_seq(allocZ)) 
+    return position;  //+ "Thrown away on wrong cube relative position"
+
   for (int i = 0; i < cubes.size(); i++)  //~ applying small cubes
   {
     position.x = distance(allocX.begin(), find(allocX.begin(),allocX.end(), i));
     position.y = distance(allocY.begin(), find(allocY.begin(),allocY.end(), i));
     position.z = distance(allocZ.begin(), find(allocZ.begin(),allocZ.end(), i));
-    //if (cu_pos_X > cu_pos_Y || cu_pos_Y > cu_pos_Z) return false; //~ TODO: break on wrong cube pos
     
     for (int x = position.x; x < position.x + cubes[i].size(); x++)
       for (int y = position.y; y < position.y + cubes[i].size(); y++)
