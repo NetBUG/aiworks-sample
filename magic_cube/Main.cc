@@ -10,10 +10,9 @@
 using namespace std;
 
 #ifndef DEBUG
-bool bDebug = true;
-#include <ctime>
-#define DEBUG
+bool bDebug = false;
 #else
+#include <ctime>
 bool bDebug = true;
 #endif
 
@@ -43,15 +42,16 @@ int load_data(string filename = "sample.in")
     assert(P > 2 && P < 6);	//~ Wrong max cell value
 
     big_cube.resize(pow(M, 3));
-    for (vector<int>::iterator i = big_cube.begin(); i < big_cube.end(); ++i)
-        fh >> *i;
+    //for (vector<int>::iterator i = big_cube.begin(); i < big_cube.end(); ++i)
+    //    fh >> *i;
+    for (int i = 0; i < big_cube.size(); i++)
+        fh >> big_cube[i];
     if (bDebug)
       for (int i = 0; i < big_cube.size(); i++)
         printf("%d ", big_cube[i]);
 
-    cubes.resize(N);
     int cs;		//+ cube size
-    for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
       {
         fh >> cs;
         vector<int> cube(pow(cs, 3));
@@ -59,63 +59,60 @@ int load_data(string filename = "sample.in")
             fh >> *it;
         cubes.push_back(cube);
       }
-
     return 0;
 }	//+ load_data
 
-bool check_validity(vector<int> allocX, vector<int> allocY, vector<int> allocZ) {
+coord check_validity(vector<int> allocX, vector<int> allocY, vector<int> allocZ) {
   vector <int> new_cube(big_cube);
+  coord position;
   for (int i = 0; i < cubes.size(); i++)  //~ applying small cubes
   {
-    int cu_pos_X = distance(allocX.begin(), find(allocX.begin(),allocX.end(), i));
-    int cu_pos_Y = distance(allocY.begin(), find(allocY.begin(),allocY.end(), i));
-    int cu_pos_Z = distance(allocZ.begin(), find(allocZ.begin(),allocZ.end(), i));
+    position.x = distance(allocX.begin(), find(allocX.begin(),allocX.end(), i));
+    position.y = distance(allocY.begin(), find(allocY.begin(),allocY.end(), i));
+    position.z = distance(allocZ.begin(), find(allocZ.begin(),allocZ.end(), i));
+    //if (cu_pos_X > cu_pos_Y || cu_pos_Y > cu_pos_Z) return false; //~ TODO: break on wrong cube pos
     
-    if (cu_pos_X > cu_pos_Y || cu_pos_Y > cu_pos_Z) return false; //~ TODO: break on wrong cube pos
-    
-    for (int x = cu_pos_X; i < cu_pos_X + cubes[i].size(); x++)
-      for (int y = cu_pos_Y; i < cu_pos_Y + cubes[i].size(); y++)
-        for (int z = cu_pos_Z; i < cu_pos_Z + cubes[i].size(); z++) {
-          new_cube[x] = (new_cube[x] + cubes[i][0]) % P;
-          new_cube[y + M] = (cubes[i][1] + new_cube[y + M]) % P;
-          new_cube[z + 2 * M] += (cubes[i][2] + new_cube[z + 2 * M]) % P;
+    for (int x = position.x; x < position.x + cubes[i].size(); x++)
+      for (int y = position.y; y < position.y + cubes[i].size(); y++)
+        for (int z = position.z; z < position.z + cubes[i].size(); z++) {
+          new_cube[x + y*M + z*pow(M, 2)] = (new_cube[x + y*M + z*pow(M, 2)] 
+            + cubes[i][0]) % P;
+          continue;
         }
   }
-  return accumulate(new_cube.begin(), new_cube.end(), 0) == 0;
+  return accumulate(new_cube.begin(), new_cube.end(), 0) == 0 ? position : *(new coord());
 }
 
 void calculate_cubes() 
 {
-    vector<coord> res(N);
+    vector<coord> res(0);
 
     //+ Calculating
     int sum_cube_size = 0;
-    cout << "Iterating... ";
     for (vector<vector<int> >::iterator it = cubes.begin(); it < cubes.end(); ++it)
       sum_cube_size += it->size();
-    cout << "Total variation: " << sum_cube_size << ", allocating " << cubes.size();
-    vector<int> allocX(M - sum_cube_size, 0);
-    vector<int> allocY(M - sum_cube_size, 0);
-    vector<int> allocZ(M - sum_cube_size, 0);
-    for (int i = 0; i < cubes.size(); i++)
-      allocX[i] = i + 1, allocY[i] = i + 1, allocZ[i] = i + 1;
+    vector<int> allocX(M - sum_cube_size + 1, 0);
+    vector<int> allocY(M - sum_cube_size + 1, 0);
+    vector<int> allocZ(M - sum_cube_size + 1, 0);
+    for (int i = 1; i <= cubes.size(); i++)
+      allocX[i] = i, allocY[i] = i, allocZ[i] = i;
     do {
       do {
         do {
-        if (check_validity(allocX, allocY, allocZ))   //+ if 
-        {
-          coord position;
-          position.x = 0;
-          position.y = 1;
-          position.z = 2;
-          res.push_back(position);
-        }
-      } while(std::next_permutation(allocZ.begin(), allocZ.end()));
-    } while(std::next_permutation(allocY.begin(), allocY.end()));
-  } while(std::next_permutation(allocX.begin(), allocX.end()));
-
-    for (vector<coord>::iterator i = res.begin(); i < res.end(); ++i)
+          coord position = check_validity(allocX, allocY, allocZ);
+          if (position.x > -1)   //+ if 
+            res.push_back(position);
+          } while(std::next_permutation(allocZ.begin(), allocZ.end()));
+      } while(std::next_permutation(allocY.begin(), allocY.end()));
+    } while(std::next_permutation(allocX.begin(), allocX.end()));
+    if (bDebug) {
+      cout << endl << res.size() << " combinations: " << endl;
+      for (vector<coord>::iterator i = res.begin(); i < res.end(); ++i)
         printf("[%d %d %d]\n", i -> x, i -> y, i -> x);
+    } else {
+      for (vector<coord>::iterator i = res.begin(); i < res.end(); ++i)
+        printf("%d %d %d", i -> x, i -> y, i -> x);
+    }
 }	//+ calculate_cubes
 
 int main(int argc, char *argv[])
@@ -123,11 +120,18 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
     clock_t begin = clock();
 #endif
-    cout << "Hello, world!\n";
     try {
         load_data();
     } catch (const exception& e) {
         cout << "Error reading source file!" << endl;
+        return -1;
+    }
+
+    if (bDebug) for (int i = 0; i < cubes.size(); i++) {
+      cout << endl << cubes.size() << " cubes" << endl;
+      for (int j = 0; j < cubes[i].size(); j++)
+        cout << cubes[i][j];
+      cout << endl;
     }
 
     calculate_cubes();
